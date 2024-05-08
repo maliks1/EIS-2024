@@ -1,0 +1,56 @@
+#include <DHT.h>
+#define DHTPIN 5
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+const int lampu = 13;
+float hum;
+float temp;
+
+const int DETECTION_PERIOD = 10000; // Periode deteksi dalam milidetik (misalnya, 10 detik)
+unsigned long previousMillis = 0; // Waktu sebelumnya
+float tempSum = 0; // Jumlah suhu selama periode deteksi
+int sampleCount = 0; // Jumlah sampel suhu yang telah diambil
+
+void setup() {
+  Serial.begin(9600);
+  dht.begin();
+  pinMode(lampu, OUTPUT);
+}
+
+void loop() {
+  unsigned long currentMillis = millis(); // Waktu saat ini
+  if (currentMillis - previousMillis >= DETECTION_PERIOD) {
+    // Hitung rata-rata suhu selama periode deteksi
+    float avgTemp = tempSum / sampleCount;
+    if (avgTemp >= 35) {
+      digitalWrite(lampu, HIGH);
+      Serial.print("SUHU DAN KELEMBAPAN RATA-RATA SELAMA 10 DETIK SEBESAR ");
+      Serial.print(hum);
+      Serial.print("%");
+      Serial.print(" & ");
+      Serial.print(temp);
+      Serial.print("°C \n");
+    } else {
+      digitalWrite(lampu, LOW);
+      Serial.print("SUHU DAN KELEMBAPAN RATA-RATA SELAMA 10 DETIK SEBESAR ");
+      Serial.print(hum);
+      Serial.print("%");
+      Serial.print(" & ");
+      Serial.print(temp);
+      Serial.print("°C \n");
+    }
+    // Reset variabel untuk periode deteksi berikutnya
+    tempSum = 0;
+    sampleCount = 0;
+    previousMillis = currentMillis;
+  }
+  // Baca suhu dan tambahkan ke total
+  hum = dht.readHumidity();
+  temp = dht.readTemperature();
+  if (!isnan(temp)) { // Pastikan nilai suhu valid
+    tempSum += temp;
+    sampleCount++;
+  }
+  delay(2000);
+}
